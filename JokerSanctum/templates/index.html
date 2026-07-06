@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>𝓙𝓸𝓴𝓮𝓻丨𝓜4 Sanctum — Code Protection Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a12;--surface:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.08);--text:#e0e0e0;--accent:#c084fc;--accent2:#f472b6;--gold:#fbbf24;--glass:rgba(255,255,255,0.06)}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP','Noto Naskh Arabic',sans-serif;min-height:100vh;overflow-x:hidden}
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:2rem}
+header{text-align:center;padding:3rem 1rem 2rem}
+header h1{font-size:2.5rem;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;line-height:1.3}
+header p{color:#999;margin-top:.5rem;font-size:1.05rem;letter-spacing:.05em}
+.credit{color:#666;font-size:.85rem;margin-top:1rem}
+.credit span{color:var(--accent)}
+.card{background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;padding:2rem;margin-bottom:2rem;transition:all .3s}
+.card:hover{border-color:rgba(255,255,255,0.15)}
+.card h2{font-size:1.3rem;margin-bottom:1.5rem;color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.cipher-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .25s;user-select:none;position:relative}
+.cipher-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.cipher-card.selected{background:rgba(192,132,252,0.12);border-color:var(--accent);box-shadow:0 0 25px rgba(192,132,252,0.15)}
+.cipher-card input{display:none}
+.cipher-card .name{font-weight:700;font-size:.95rem;color:var(--text)}
+.cipher-card .desc{font-size:.75rem;color:#888;margin-top:4px;line-height:1.3}
+.cipher-card .badge{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .25s}
+.cipher-card.selected .badge{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.upload-zone{border:2px dashed var(--border);border-radius:16px;padding:3rem;text-align:center;transition:all .3s;cursor:pointer}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(192,132,252,0.05)}
+.upload-zone .icon{font-size:3rem;margin-bottom:1rem;display:block}
+.upload-zone .label{color:#999;font-size:.95rem}
+.upload-zone input{display:none}
+.toggles{display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.5rem}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 16px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid var(--border);transition:all .25s}
+.toggle.active{border-color:var(--accent);background:rgba(192,132,252,0.1)}
+.toggle input{display:none}
+.toggle .dot{width:18px;height:18px;border-radius:50%;border:2px solid #555;transition:all .25s;display:flex;align-items:center;justify-content:center}
+.toggle.active .dot{border-color:var(--accent);background:var(--accent)}
+.toggle .dot::after{content:'✓';color:#fff;font-size:12px;display:none}
+.toggle.active .dot::after{display:block}
+.btn{padding:14px 40px;border:none;border-radius:12px;font-size:1.05rem;font-weight:700;cursor:pointer;transition:all .3s;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;width:100%;margin-top:1.5rem}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(192,132,252,0.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.result{display:none}
+.result.show{display:block}
+.result-info{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:12px;padding:1rem;margin-top:1rem}
+.result-info strong{color:#22c55e}
+.download-btn{display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;margin-top:1rem;transition:all .3s}
+.download-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,0.3)}
+.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:1rem;color:#ef4444;margin-top:1rem;display:none}
+.spinner{display:none;text-align:center;padding:2rem}
+.spinner.show{display:block}
+.spinner::after{content:'';display:inline-block;width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{text-align:center;padding:2rem;color:#444;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--accent);text-decoration:none}
+.section-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.section-label .count{font-size:.85rem;color:#666}
+@media(max-width:600px){.grid{grid-template-columns:1fr}header h1{font-size:1.8rem}.card{padding:1.2rem}}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<div class="container">
+<header>
+<h1>𝓙𝓸𝓴𝓮𝓻丨𝓜4 Sanctum</h1>
+<p>Multi-Layer Code Protection Engine — Top 10 Encryption Algorithms</p>
+<div class="credit">Crafted with 暗黒 by <span>𝓙𝓸𝓴𝓮𝓻丨𝓜4</span> &amp; <span>آسِـتٌـٕنِـْجّـآيَـٰٕهّ✨</span></div>
+</header>
+
+<div class="card">
+<div class="section-label">
+<h2>⚔ Cipher Layers</h2>
+<span class="count">Select one or more — chain order = encrypt order</span>
+</div>
+<div class="grid" id="cipherGrid">
+{% for c in ciphers %}
+<label class="cipher-card{% if loop.first %} selected{% endif %}" data-id="{{ c.id }}">
+<input type="checkbox" name="ciphers" value="{{ c.id }}"{% if loop.first %} checked{% endif %}>
+<span class="name">{{ c.name }}</span>
+<span class="desc">{{ c.desc }}</span>
+<span class="badge"></span>
+</label>
+{% endfor %}
+</div>
+</div>
+
+<div class="card">
+<h2>📁 Target File</h2>
+<div class="upload-zone" id="uploadZone">
+<span class="icon">🐍</span>
+<div class="label">Drop a <strong>.py</strong> file here or click to browse</div>
+<input type="file" id="fileInput" accept=".py">
+</div>
+</div>
+
+<div class="card">
+<h2>🔧 Obfuscation</h2>
+<div class="toggles">
+<label class="toggle active" id="togRename">
+<input type="checkbox" checked>
+<span class="dot"></span>
+<span>Identifier Rename</span>
+</label>
+<label class="toggle active" id="togStrip">
+<input type="checkbox" checked>
+<span class="dot"></span>
+<span>Strip Docstrings</span>
+</label>
+<label class="toggle active" id="togDead">
+<input type="checkbox" checked>
+<span class="dot"></span>
+<span>Dead Code Injection</span>
+</label>
+<label class="toggle" id="togEncStr">
+<input type="checkbox">
+<span class="dot"></span>
+<span>Encode Strings</span>
+</label>
+<label class="toggle" id="togFakeImports">
+<input type="checkbox">
+<span class="dot"></span>
+<span>Fake Imports</span>
+</label>
+<label class="toggle" id="togAntiDebug">
+<input type="checkbox">
+<span class="dot"></span>
+<span>Anti-Debug</span>
+</label>
+</div>
+<button class="btn" id="protectBtn">🛡 ENCRYPT &amp; PROTECT</button>
+<div class="spinner" id="spinner"></div>
+<div class="error" id="error"></div>
+<div class="result" id="result">
+<div class="result-info">
+<strong>✓ Protected successfully!</strong>
+<div id="resultDetails" style="margin-top:8px;color:#aaa;font-size:.9rem"></div>
+<a class="download-btn" id="downloadLink" href="#">⬇ Download Protected File</a>
+</div>
+</div>
+</div>
+
+<footer>
+<a href="/admin">⚙ Admin Panel</a> — Only 𝓙𝓸𝓴𝓮𝓻丨𝓜4 &amp; آسِـتٌـٕنِـْجّـآيَـٰٕهّ✨
+</footer>
+</div>
+
+<script>
+// ── Particle background ──
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+class Particle{constructor(){this.reset()}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*3+1;this.speedX=(Math.random()-.5)*.5;this.speedY=(Math.random()-.5)*.5;this.opacity=Math.random()*.5+.2;this.color=`rgba(192,132,252,${this.opacity})`}update(){this.x+=this.speedX;this.y+=this.speedY;if(this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height)this.reset()}draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle=this.color;ctx.fill()}}
+for(let i=0;i<80;i++)particles.push(new Particle());
+function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.update();p.draw()});requestAnimationFrame(animate)}
+animate();
+
+// ── Cipher selection ──
+document.querySelectorAll('.cipher-card').forEach(card=>{
+card.addEventListener('click',()=>{
+const cb=card.querySelector('input');
+cb.checked=!cb.checked;
+card.classList.toggle('selected',cb.checked);
+updateCount();
+});
+});
+function updateCount(){
+const n=document.querySelectorAll('.cipher-card.selected').length;
+document.querySelector('.section-label .count').textContent=n+' selected — chain order = encrypt order';
+}
+
+// ── Toggles ──
+['togRename','togStrip','togDead','togEncStr','togFakeImports','togAntiDebug'].forEach(id=>{
+document.getElementById(id).addEventListener('click',function(){
+const cb=this.querySelector('input');
+cb.checked=!cb.checked;
+this.classList.toggle('active',cb.checked);
+});
+});
+
+// ── File upload ──
+const uploadZone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('fileInput');
+uploadZone.addEventListener('click',()=>fileInput.click());
+uploadZone.addEventListener('dragover',e=>{e.preventDefault();uploadZone.classList.add('dragover')});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('dragover');fileInput.files=e.dataTransfer.files});
+fileInput.addEventListener('change',()=>{
+if(fileInput.files.length){
+const f=fileInput.files[0];
+uploadZone.querySelector('.label').innerHTML=`📄 <strong>${f.name}</strong> (${(f.size/1024).toFixed(1)} KB)`;
+}
+});
+
+// ── Protect ──
+document.getElementById('protectBtn').addEventListener('click',async function(){
+if(!fileInput.files.length){showError('Please select a .py file first');return}
+const fd=new FormData();
+document.querySelectorAll('.cipher-card.selected').forEach(c=>{
+fd.append('ciphers',c.dataset.id);
+});
+fd.append('file',fileInput.files[0]);
+fd.append('obf_rename',document.querySelector('#togRename input').checked);
+fd.append('obf_strip',document.querySelector('#togStrip input').checked);
+fd.append('obf_deadcode',document.querySelector('#togDead input').checked);
+fd.append('obf_encstr',document.querySelector('#togEncStr input').checked);
+fd.append('obf_fakeimports',document.querySelector('#togFakeImports input').checked);
+fd.append('obf_antidebug',document.querySelector('#togAntiDebug input').checked);
+
+this.disabled=true;
+document.getElementById('spinner').classList.add('show');
+hideError();
+hideResult();
+
+try{
+const res=await fetch('/protect',{method:'POST',body:fd});
+const data=await res.json();
+if(!res.ok)throw new Error(data.error||'Protection failed');
+showResult(data);
+}catch(e){showError(e.message)}
+finally{
+this.disabled=false;
+document.getElementById('spinner').classList.remove('show');
+}
+});
+
+function showResult(data){
+const r=document.getElementById('result');
+r.classList.add('show');
+document.querySelector('#resultDetails').innerHTML=`Layers: <strong>${data.layers.join(' → ')}</strong><br>Size: ${(data.size/1024).toFixed(1)} KB`;
+document.getElementById('downloadLink').href='/download/'+data.file_id;
+}
+function showError(msg){
+const e=document.getElementById('error');
+e.textContent='⚠ '+msg;e.style.display='block';
+}
+function hideError(){document.getElementById('error').style.display='none'}
+function hideResult(){document.getElementById('result').classList.remove('show')}
+</script>
+</body>
+</html>
